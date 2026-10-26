@@ -5,7 +5,9 @@ import time
 import requests
 from bs4 import BeautifulSoup
 
-SB = os.environ["SUPABASE_URL"].rstrip("/")
+from urllib.parse import urlparse
+_u = urlparse(os.environ["SUPABASE_URL"].strip())
+SB = f"{_u.scheme}://{_u.netloc}"
 KEY = os.environ["SUPABASE_SERVICE_KEY"]
 TG_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 
@@ -136,7 +138,9 @@ def main():
     r = requests.get(f"{SB}/rest/v1/filters", headers=DB,
                      params={"enabled": "eq.true", "select": "*,users(telegram_id)"},
                      timeout=30)
-    r.raise_for_status()
+    if not r.ok:
+        print("! supabase:", r.status_code, r.text[:300])
+        r.raise_for_status()
     by_url = {}
     for f in r.json():
         if f.get("section_url"):
