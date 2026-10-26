@@ -1,0 +1,43 @@
+name: summarize-scan
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build summary
+        run: |
+          python3 - <<'PY'
+          import json, re
+          data = json.load(open("funpay_scan.json", encoding="utf-8"))
+          out = []
+          for g in data:
+              out.append("=== " + g["title"] + " | " + g["start_url"])
+              for c in g["categories"]:
+                  name = re.sub(r"\s*\d+\s*$", "", c["name"])
+                  out.append("")
+                  out.append("## " + name + " | " + c["url"])
+                  for k in c["controls"]:
+                      n = k.get("name") or ""
+                      if n.startswith("cc-") or n in ("remember", "query", "desc"):
+                          continue
+                      if k["kind"] == "select":
+                          out.append("select " + n + ": " + " | ".join(o[1] for o in k["options"][:60]))
+                      elif k["kind"] == "checkbox":
+                          out.append("checkbox " + n + ": " + k["options"][0][1])
+                      elif k["kind"] == "input":
+                          out.append("input " + str(n) + ": " + str(k.get("placeholder")))
+                  for key, vals in c.get("data_attrs", {}).items():
+                      out.append("data " + key + ": " + ", ".join(vals[:12]))
+          open("funpay_summary.txt", "w", encoding="utf-8").write("\n".join(out))
+          PY
+      - name: Save result
+        run: |
+          git config user.name "scanner"
+          git config user.email "scanner@users.noreply.github.com"
+          git add funpay_summary.txt
+          git commit -m "summary" || echo "nothing to commit"
+          git push
