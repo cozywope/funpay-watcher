@@ -267,13 +267,15 @@ function mkC(id,name,d,bg,surf,ink,mut,line,acc,on,ok,soft){return[id,name,acc,b
 var TC=[mkC("c-sunset","Закат",1,"#2b1633","#3a1f45","#ffe9d6","#dcb0bd","#5a3166","#ff9a5c","#2b1633","#9be8b0","#4a2a58"),mkC("c-lagoon","Лагуна",1,"#0f3a40","#16505a","#e4fbf4","#a3dcd3","#23707a","#ffd166","#0f3a40","#8ef0b8","#1c5f69"),mkC("c-dusk","Сумерки",1,"#1f2350","#2b3070","#e9ebff","#b2b8f0","#404a96","#5ee0c0","#1f2350","#7ef0a8","#353b86"),mkC("c-peach","Персик",0,"#f9e3d3","#fdf1e6","#3a2230","#7b5a64","#ebc9b3","#c2325f","#fff4ee","#2e7d55","#f4d0bd"),mkC("c-mint","Мята",0,"#d9f0e6","#eaf8f1","#17382f","#4d7469","#b3dccb","#187563","#f0fbf6","#1b7f4f","#c3e6d7"),mkC("c-lavender","Лаванда",0,"#e6e0f7","#f3effc","#2b2250","#665b95","#cfc6ec","#6b4fd8","#f6f3ff","#1f7a5a","#d6cdf2")];
 function mkT(d,id,name,acc,soft){var v=d?{bg:"#0a0a0a",surf:"#151515",ink:"#f5f5f5",mut:"#a8a8a8",line:"#2e2e2e",on:"#0a0a0a",ok:"#4ade80"}:{bg:"#f5f5f5",surf:"#ffffff",ink:"#111111",mut:"#5f5f5f",line:"#e0e0e0",on:"#ffffff",ok:"#0e7a48"};v.acc=acc;v.soft=soft;v.dark=d;return[id,name,acc,v.bg,v]}
 var TB=[mkT(1,"k-red","Чёрный и красный","#ff4a4a","#2a1313"),mkT(1,"k-gold","Чёрный и золотой","#ffc400","#2a2310"),mkT(1,"k-cyan","Чёрный и голубой","#22d3ee","#0f2630"),mkT(1,"k-lime","Чёрный и лаймовый","#a3e635","#1c2a10"),mkT(1,"k-violet","Чёрный и фиолетовый","#a78bfa","#20183a"),mkT(1,"k-orange","Чёрный и оранжевый","#ff8a1f","#2a1a0e")];
-var TW=[mkT(0,"w-red","Белый и красный","#d62828","#fde8e8"),mkT(0,"w-blue","Белый и синий","#1d4ed8","#e3ebff"),mkT(0,"w-green","Белый и зелёный","#15803d","#dff3e5"),mkT(0,"w-purple","Белый и фиолетовый","#7e22ce","#f0e4fb"),mkT(0,"w-orange","Белый и оранжевый","#c2410c","#ffeadb"),mkT(0,"w-pink","Белый и розовый","#be185d","#fce4ef")];
+function mixc(a,b,t){var x=parseInt(a.slice(1),16),y=parseInt(b.slice(1),16),r=0;for(var s=16;s>=0;s-=8){r=(r<<8)|Math.round(((x>>s)&255)*(1-t)+((y>>s)&255)*t)}return "#"+("000000"+r.toString(16)).slice(-6)}
+function mkW(id,name,bg,acc){var v={bg:bg,surf:mixc(bg,"#ffffff",.6),ink:mixc(acc,"#000000",.8),mut:mixc(acc,"#000000",.55),line:mixc(bg,acc,.4),on:mixc(acc,"#000000",.85),ok:"#2e7d55",soft:mixc(bg,acc,.25),acc:acc,dark:0};return[id,name,acc,bg,v]}
+var TW=[mkW("w-sand","Песок","#faf8f5","#c8a882"),mkW("w-ice","Лёд","#f5f8fa","#7eb5d6"),mkW("w-lemon","Лимон","#fafaf3","#d4c84a"),mkW("w-sage","Шалфей","#f5f8f4","#7a9e7e"),mkW("w-coral","Коралл","#fdf7f5","#e8896a"),mkW("w-lilac","Сирень","#f8f6fb","#9b7fc2")];
 var ALL=TC.concat(TB,TW);
 var VK=["bg","surf","ink","mut","line","acc","on","ok","soft"],thOpen=false;
 function sw(t,v){return '<button data-th="'+t[0]+'" class="'+(t[0]===v?"on":"")+'"><i style="background:linear-gradient(135deg,'+t[2]+' 50%,'+t[3]+' 50%)"></i>'+t[1]+"</button>"}
 function drawTh(v,cur){
   var g=function(h,a){return "<h3>"+h+'</h3><div class="thg">'+a.map(function(t){return sw(t,v)}).join("")+"</div>"};
-  $("#th").innerHTML='<button id="thb" aria-expanded="'+thOpen+'"><i style="background:linear-gradient(135deg,'+cur[2]+' 50%,'+cur[3]+' 50%)"></i>Темы: '+cur[1]+"</button>"+(thOpen?'<div class="thp">'+g("Цветные",TC)+g("С чёрным",TB)+g("С белым",TW)+"</div>":"");
+  $("#th").innerHTML='<button id="thb" aria-expanded="'+thOpen+'"><i style="background:linear-gradient(135deg,'+cur[2]+' 50%,'+cur[3]+' 50%)"></i>Темы: '+cur[1]+"</button>"+(thOpen?'<div class="thp">'+g("Цветные",TC)+g("С чёрным",TB)+g("Светлые",TW)+"</div>":"");
 }
 function theme(v){
   var r=document.documentElement,cur=null;
