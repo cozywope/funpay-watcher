@@ -274,8 +274,10 @@ var ALL=TC.concat(TB,TW);
 var VK=["bg","surf","ink","mut","line","acc","on","ok","soft"],thOpen=false;
 function sw(t,v){return '<button data-th="'+t[0]+'" class="'+(t[0]===v?"on":"")+'"><i style="background:linear-gradient(135deg,'+t[2]+' 50%,'+t[3]+' 50%)"></i>'+t[1]+"</button>"}
 function drawTh(v,cur){
+  var _p=document.querySelector(".thp"),_st=_p?_p.scrollTop:0;
   var g=function(h,a){return "<h3>"+h+'</h3><div class="thg">'+a.map(function(t){return sw(t,v)}).join("")+"</div>"};
   $("#th").innerHTML='<button id="thb" aria-expanded="'+thOpen+'"><i style="background:linear-gradient(135deg,'+cur[2]+' 50%,'+cur[3]+' 50%)"></i>Темы: '+cur[1]+"</button>"+(thOpen?'<div class="thp">'+g("Цветные",TC)+g("С чёрным",TB)+g("Светлые",TW)+"</div>":"");
+  var _n=document.querySelector(".thp");if(_n)_n.scrollTop=_st;
 }
 function theme(v){
   var r=document.documentElement,cur=null;
