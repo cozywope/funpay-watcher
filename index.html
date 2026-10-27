@@ -22,10 +22,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .top button:hover{color:var(--ink)}
 .top .cur{color:var(--ink);font-weight:600}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
-.tile{position:relative;aspect-ratio:1/1;border:0;border-radius:22px 22px 22px 6px;background:var(--c);color:#fff;text-align:left;padding:14px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
-.tile b{position:absolute;right:-6px;top:-22px;font:700 130px/1 Unbounded,sans-serif;opacity:.28}
+.tile{position:relative;aspect-ratio:1/1;border-radius:22px 22px 22px 6px;background:var(--surf);border:2px solid var(--line);color:var(--ink);text-align:left;padding:14px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.tile b{position:absolute;right:-6px;top:-22px;font:700 130px/1 Unbounded,sans-serif;color:var(--acc);opacity:.35}
 .tile span{font:600 18px/1.2 Onest,sans-serif;position:relative}
-.tile:hover{transform:translateY(-3px)}
+.tile:hover{transform:translateY(-3px);border-color:var(--acc);background:var(--soft)}
 .tile{transition:transform .15s}
 .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 .cat{background:var(--surf);border:1.5px solid var(--line);border-radius:14px;padding:18px 16px;text-align:left;font-weight:600;font-size:17px}
