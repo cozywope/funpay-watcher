@@ -1,11 +1,12 @@
 import os
 import random
+import re
 import time
+from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
 
-from urllib.parse import urlparse
 _u = urlparse(os.environ["SUPABASE_URL"].strip())
 SB = f"{_u.scheme}://{_u.netloc}"
 KEY = os.environ["SUPABASE_SERVICE_KEY"]
@@ -14,11 +15,30 @@ TG_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 DB = {"apikey": KEY, "Authorization": "Bearer " + KEY, "Content-Type": "application/json"}
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+_rate = None
+
+
+def usd_rub():
+    global _rate
+    if _rate is None:
+        try:
+            r = requests.get("https://www.cbr-xml-daily.ru/daily_json.js", timeout=15)
+            _rate = float(r.json()["Valute"]["USD"]["Value"])
+        except Exception as e:
+            print("! курс ЦБ недоступен, беру 90:", e)
+            _rate = 90.0
+    return _rate
+
+
+def norm(s):
+    s = re.sub(r"\s+", " ", str(s)).strip().lower()
+    s = re.sub(r"^%([^-]+)-.*$", r"\1", s)
+    s = re.sub(r"\s*-\s*", "-", s)
+    return re.sub(r"^\[free\]\s*", "", s)
 
 
 def fetch_lots(url):
-    r = requests.get(url, headers={"User-Agent": UA, "Accept-Language": "ru-RU,ru;q=0.9"},
-                     cookies={"cy": "RUB"}, timeout=30)
+    r = requests.get(url, headers={"User-Agent": UA, "Accept-Language": "ru-RU,ru;q=0.9"}, timeout=30)
     if r.status_code != 200:
         print(f"! {url}: HTTP {r.status_code}")
         return None
@@ -33,40 +53,53 @@ def fetch_lots(url):
             price = float(price_tag.get("data-s"))
         except (TypeError, ValueError):
             continue
-        skins = a.get("data-f-skin")
+        attrs = {k: str(v) for k, v in a.attrs.items() if k.startswith("data-f-")}
+        skins = attrs.get("data-f-skin")
         server = a.select_one(".tc-server")
         desc = a.select_one(".tc-desc-text")
-        unit = price_tag.select_one(".unit")
+        unit_tag = price_tag.select_one(".unit")
+        unit = unit_tag.get_text(strip=True) if unit_tag else ""
+        deal = next((attrs[k] for k in ("data-f-type", "data-f-type2")
+                     if attrs.get(k) in ("аренда", "продажа")), "")
         lots.append({
-            "id": lot_id,
-            "url": a.get("href"),
-            "price": price,
-            "unit": unit.get_text(strip=True) if unit else "",
+            "id": lot_id, "url": a.get("href"), "price": price, "unit": unit,
+            "price_rub": price * usd_rub() if unit == "$" else price,
             "platform": server.get_text(strip=True) if server else "",
             "title": desc.get_text(strip=True) if desc else "",
-            "type": a.get("data-f-type") or "",
-            "skins": int(skins) if skins and skins.isdigit() else None,
-            "online": a.get("data-online") == "1",
-            "auto": a.get("data-auto") == "1",
+            "deal": deal, "attrs": attrs,
+            "skins": int(skins) if skins and skins.lstrip("-").isdigit() else None,
+            "online": a.get("data-online") == "1", "auto": a.get("data-auto") == "1",
         })
     return lots
 
 
+def attr_ok(lot, attr_names, value):
+    want = norm(value)
+    for name in attr_names:
+        got = lot["platform"] if name == "@server" else lot["attrs"].get(name)
+        if got is None:
+            continue
+        got = norm(got)
+        if got == want or got.startswith(want + " (") or (name == "@server" and want in got):
+            return True
+    return False
+
+
 def matches(f, l):
-    if f.get("platform") and f["platform"].lower() != l["platform"].lower():
+    if f.get("platform") and norm(f["platform"]) != norm(l["platform"]):
         return False
     deal = f.get("deal_type") or "all"
-    if deal == "sale" and l["type"] == "аренда":
+    if deal == "sale" and l["deal"] == "аренда":
         return False
-    if deal == "rent" and l["type"] != "аренда":
+    if deal == "rent" and l["deal"] != "аренда":
         return False
     if f.get("skins_min") is not None and (l["skins"] is None or l["skins"] < f["skins_min"]):
         return False
     if f.get("skins_max") is not None and (l["skins"] is None or l["skins"] > f["skins_max"]):
         return False
-    if f.get("price_min") is not None and l["price"] < f["price_min"]:
+    if f.get("price_min") is not None and l["price_rub"] < float(f["price_min"]):
         return False
-    if f.get("price_max") is not None and l["price"] > f["price_max"]:
+    if f.get("price_max") is not None and l["price_rub"] > float(f["price_max"]):
         return False
     if f.get("online") == "yes" and not l["online"]:
         return False
@@ -76,6 +109,9 @@ def matches(f, l):
         return False
     if f.get("deliv") == "no" and l["auto"]:
         return False
+    for item in f.get("extra") or []:
+        if not attr_ok(l, item[0], item[1]):
+            return False
     return True
 
 
@@ -87,8 +123,7 @@ def insert_seen(user_id, ids):
         r = requests.post(
             f"{SB}/rest/v1/seen_lots",
             headers={**DB, "Prefer": "resolution=ignore-duplicates,return=representation"},
-            params={"on_conflict": "user_id,lot_id"},
-            json=rows, timeout=30)
+            params={"on_conflict": "user_id,lot_id"}, json=rows, timeout=30)
         r.raise_for_status()
         inserted |= {x["lot_id"] for x in r.json()}
     return inserted
@@ -96,16 +131,17 @@ def insert_seen(user_id, ids):
 
 def notify(chat_id, text):
     r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
-                      json={"chat_id": chat_id, "text": text,
-                            "disable_web_page_preview": True}, timeout=30)
+                      json={"chat_id": chat_id, "text": text, "disable_web_page_preview": True}, timeout=30)
     if not r.ok:
         print("! telegram:", r.status_code, r.text[:200])
 
 
 def describe(f, l):
-    price = f"{round(l['price'], 2):g} {l['unit']}".strip()
+    price = f"{round(l['price_rub']):,} ₽".replace(",", " ")
+    if l["unit"] == "$":
+        price += f" (≈ {l['price']:g} $)"
     parts = [f"Появилось: {f['game']}, {f['category'].lower()}"]
-    if l["skins"] is not None:
+    if l["skins"] is not None and l["skins"] >= 0:
         parts.append(f"скинов: {l['skins']}")
     parts.append(price)
     return ", ".join(parts) + "\n" + l["title"][:120] + "\n" + l["url"]
@@ -119,9 +155,8 @@ def process(f, lots):
     found = [l for l in lots if matches(f, l)]
     if not f.get("baselined"):
         insert_seen(f["user_id"], [l["id"] for l in found])
-        requests.patch(f"{SB}/rest/v1/filters", headers=DB,
-                       params={"id": f"eq.{f['id']}"}, json={"baselined": True},
-                       timeout=30).raise_for_status()
+        requests.patch(f"{SB}/rest/v1/filters", headers=DB, params={"id": f"eq.{f['id']}"},
+                       json={"baselined": True}, timeout=30).raise_for_status()
         print(f"filter {f['id']}: первый запуск, запомнил {len(found)} лотов без уведомлений")
         return
     new_ids = insert_seen(f["user_id"], [l["id"] for l in found])
@@ -136,8 +171,7 @@ def process(f, lots):
 
 def main():
     r = requests.get(f"{SB}/rest/v1/filters", headers=DB,
-                     params={"enabled": "eq.true", "select": "*,users(telegram_id)"},
-                     timeout=30)
+                     params={"enabled": "eq.true", "select": "*,users(telegram_id)"}, timeout=30)
     if not r.ok:
         print("! supabase:", r.status_code, r.text[:300])
         r.raise_for_status()
@@ -147,13 +181,19 @@ def main():
             by_url.setdefault(f["section_url"], []).append(f)
     print(f"фильтров: {sum(len(v) for v in by_url.values())}, страниц: {len(by_url)}")
     for url, flist in by_url.items():
-        lots = fetch_lots(url)
+        try:
+            lots = fetch_lots(url)
+        except Exception as e:
+            print("! ошибка загрузки", url, e)
+            continue
         if lots is None:
             continue
-        units = {l["unit"] for l in lots}
-        print(f"{url}: лотов {len(lots)}, валюта на странице: {units}")
+        print(f"{url}: лотов {len(lots)}")
         for f in flist:
-            process(f, lots)
+            try:
+                process(f, lots)
+            except Exception as e:
+                print(f"! filter {f.get('id')}: {e}")
         time.sleep(random.uniform(2, 5))
 
 
