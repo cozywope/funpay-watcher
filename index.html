@@ -21,7 +21,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .top button{background:none;border:0;padding:4px 2px;color:var(--mut);text-decoration:underline;text-underline-offset:3px}
 .top button:hover{color:var(--ink)}
 .top .cur{color:var(--ink);font-weight:600}
-.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:520px}
+.tiles .tile:last-child:nth-child(odd){grid-column:1/-1;aspect-ratio:2/1}
 .tile{position:relative;aspect-ratio:1/1;border-radius:22px 22px 22px 6px;background:var(--surf);border:2px solid var(--line);color:var(--ink);text-align:left;padding:14px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
 .tile b{position:absolute;right:-6px;top:-22px;font:700 130px/1 Unbounded,sans-serif;color:var(--acc);opacity:.35}
 .tile span{font:600 18px/1.2 Onest,sans-serif;position:relative}
@@ -358,7 +359,7 @@ function startSearch(){if(S.busy)return;var f=S.f,url=(URLS[S.game]||{})[S.cat],
  S.busy=true;api("save",{p:p}).then(function(r){S.busy=false;if(r.ok){S.curId=r.id;drawAct();loadMine()}else say(ERRM[r.error]||("Ошибка: "+r.error))})}
 function stopSearch(){if(!S.curId)return;var id=S.curId;api("toggle",{id:id,on:false}).then(function(r){if(r.ok){S.curId=null;drawAct();loadMine()}else say(ERRM[r.error]||"Ошибка")})}
 function adminView(){S.game=S.cat=null;crumbs();app.innerHTML='<h1>Админ-панель</h1><div id="admbox" class="empty">Загрузка…</div>';api("admin").then(function(r){var b=$("#admbox");if(b)b.innerHTML=r.ok?"Пользователей: "+r.users+"<br>Активных поисков: "+r.active+"<br><br>Остальные функции добавим позже.":"Нет доступа"})}
-function tgInit(){api("me").then(function(r){if(r.ok){S.admin=!!r.admin;drawPv();loadMine()}else{app.innerHTML='<h1>Открой через бота</h1><div class="empty">'+esc(ERRM[r.error]||"Ошибка")+'</div>'}})}
+function tgInit(n){n=n||0;api("me").then(function(r){if(r.ok){S.admin=!!r.admin;drawPv();loadMine()}else if(n<3){setTimeout(function(){tgInit(n+1)},1500*(n+1))}})}
 var u0="";try{u0=localStorage.getItem("doska-ui")||""}catch(e){}
 theme(u0);
 home();tgInit();
