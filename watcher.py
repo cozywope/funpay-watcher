@@ -15,19 +15,37 @@ TG_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 DB = {"apikey": KEY, "Authorization": "Bearer " + KEY, "Content-Type": "application/json"}
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
-_rate = None
+_rates = None
+SYMBOLS = {"$": "USD", "€": "EUR", "£": "GBP", "₴": "UAH", "₸": "KZT", "zł": "PLN",
+           "USD": "USD", "EUR": "EUR", "GBP": "GBP", "UAH": "UAH", "KZT": "KZT", "PLN": "PLN"}
 
 
-def usd_rub():
-    global _rate
-    if _rate is None:
+def get_rates():
+    """Курсы ЦБ РФ: сколько рублей стоит 1 единица валюты."""
+    global _rates
+    if _rates is None:
+        _rates = {"RUB": 1.0}
         try:
             r = requests.get("https://www.cbr-xml-daily.ru/daily_json.js", timeout=15)
-            _rate = float(r.json()["Valute"]["USD"]["Value"])
+            for code, v in r.json()["Valute"].items():
+                _rates[code] = float(v["Value"]) / float(v["Nominal"])
         except Exception as e:
-            print("! курс ЦБ недоступен, беру 90:", e)
-            _rate = 90.0
-    return _rate
+            print("! курс ЦБ недоступен, беру запасные:", e)
+            _rates.update({"USD": 90.0, "EUR": 98.0})
+    return _rates
+
+
+def to_rub(price, unit):
+    """Переводит цену в рубли. Если валюта неизвестна, возвращает None."""
+    u = (unit or "").strip()
+    if u in ("", "₽", "руб", "RUB"):
+        return price
+    code = SYMBOLS.get(u)
+    rate = get_rates().get(code) if code else None
+    if rate is None:
+        print(f"! неизвестная валюта {u!r}, цену в рубли не перевести")
+        return None
+    return price * rate
 
 
 def norm(s):
@@ -63,7 +81,7 @@ def fetch_lots(url):
                      if attrs.get(k) in ("аренда", "продажа")), "")
         lots.append({
             "id": lot_id, "url": a.get("href"), "price": price, "unit": unit,
-            "price_rub": price * usd_rub() if unit == "$" else price,
+            "price_rub": to_rub(price, unit),
             "platform": server.get_text(strip=True) if server else "",
             "title": desc.get_text(strip=True) if desc else "",
             "deal": deal, "attrs": attrs,
@@ -96,6 +114,8 @@ def matches(f, l):
     if f.get("skins_min") is not None and (l["skins"] is None or l["skins"] < f["skins_min"]):
         return False
     if f.get("skins_max") is not None and (l["skins"] is None or l["skins"] > f["skins_max"]):
+        return False
+    if (f.get("price_min") is not None or f.get("price_max") is not None) and l["price_rub"] is None:
         return False
     if f.get("price_min") is not None and l["price_rub"] < float(f["price_min"]):
         return False
@@ -137,9 +157,10 @@ def notify(chat_id, text):
 
 
 def describe(f, l):
-    price = f"{round(l['price_rub']):,} ₽".replace(",", " ")
-    if l["unit"] == "$":
-        price += f" (≈ {l['price']:g} $)"
+    if l["price_rub"] is not None:
+        price = f"{round(l['price_rub']):,} ₽".replace(",", " ")
+    else:
+        price = f"{l['price']:g} {l['unit']}"
     parts = [f"Появилось: {f['game']}, {f['category'].lower()}"]
     if l["skins"] is not None and l["skins"] >= 0:
         parts.append(f"скинов: {l['skins']}")
