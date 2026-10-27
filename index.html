@@ -327,7 +327,10 @@ a("cs2","Буст","Диапазон Competitive","data-f-competitive");a("cs2",
 a("cs2","Прочее","Тип","data-f-type")})();
 var API="https://ezmduvodqosyslpdaudq.supabase.co/functions/v1/api",TG=window.Telegram&&Telegram.WebApp;
 if(TG){try{TG.ready();TG.expand()}catch(e){}}
-function api(a,b){return fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:a,initData:TG&&TG.initData||""},b||{}))}).then(function(r){return r.json()}).catch(function(){return{ok:false,error:"network"}})}
+function api(a,b,n){n=n||0;var body=JSON.stringify(Object.assign({action:a,initData:TG&&TG.initData||""},b||{}));
+  return fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:body}).then(function(r){return r.text().then(function(t){try{return JSON.parse(t)}catch(e){return{ok:false,error:"http_"+r.status}}})}).catch(function(e){
+    if(n<2)return new Promise(function(ok){setTimeout(ok,900)}).then(function(){return api(a,b,n+1)});
+    return{ok:false,error:"network",detail:String(e&&e.message||e)}})}
 function say(t){if(TG&&TG.showAlert)TG.showAlert(t);else alert(t)}
 var ERRM={auth:"Открой приложение через бота в Telegram",network:"Нет связи с сервером",bad_url:"Для этого раздела нет ссылки FunPay",limit:"Максимум 10 поисков. Удали лишние",server:"Ошибка сервера, попробуй позже"};
 var YNT={yes:"Да",no:"Нет",both:"Оба значения"};
@@ -356,7 +359,7 @@ function startSearch(){if(S.busy)return;var f=S.f,url=(URLS[S.game]||{})[S.cat],
   else if(k==="method"&&f.method!=="Все"){desc.push(f.method);var m=ak("Способ получения");if(m)ex.push([m,f.method])}
   else if(k.indexOf("g_")===0&&f[k]!=="Все"){desc.push(f[k]);var g=ak(o.t);if(g)ex.push([g,f[k]])}});
  var p={game:gm().n,category:S.cat,section_url:url,platform:pl,deal_type:f.type,skins_min:f.sMin,skins_max:f.sMax,price_min:f.pMin,price_max:f.pMax,online:f.online,deliv:f.deliv,extra:ex,name:gm().n+" · "+S.cat+(desc.length?" · "+desc.slice(0,3).join(", "):"")};
- S.busy=true;api("save",{p:p}).then(function(r){S.busy=false;if(r.ok){S.curId=r.id;drawAct();loadMine()}else say(ERRM[r.error]||("Ошибка: "+r.error))})}
+ S.busy=true;api("save",{p:p}).then(function(r){S.busy=false;if(r.ok){S.curId=r.id;drawAct();loadMine()}else say((ERRM[r.error]||("Ошибка: "+r.error))+(r.detail?" ("+r.detail+")":""))})}
 function stopSearch(){if(!S.curId)return;var id=S.curId;api("toggle",{id:id,on:false}).then(function(r){if(r.ok){S.curId=null;drawAct();loadMine()}else say(ERRM[r.error]||"Ошибка")})}
 function adminView(){S.game=S.cat=null;crumbs();app.innerHTML='<h1>Админ-панель</h1><div id="admbox" class="empty">Загрузка…</div>';api("admin").then(function(r){var b=$("#admbox");if(b)b.innerHTML=r.ok?"Пользователей: "+r.users+"<br>Активных поисков: "+r.active+"<br><br>Остальные функции добавим позже.":"Нет доступа"})}
 function tgInit(n){n=n||0;api("me").then(function(r){if(r.ok){S.admin=!!r.admin;drawPv();loadMine()}else if(n<3){setTimeout(function(){tgInit(n+1)},1500*(n+1))}})}
