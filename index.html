@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FunPay Watcher</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef0f6;--surf:#fff;--ink:#14183a;--mut:#5d6385;--line:#d6daea;--acc:#3b4bff;--on:#fff;--ok:#12a36e;--soft:#e4e7fb;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1124;--surf:#171b36;--ink:#eceefc;--mut:#9aa0c8;--line:#2b3160;--acc:#7b86ff;--on:#0e1124;--ok:#3ddc9a;--soft:#222850;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1124;--surf:#171b36;--ink:#eceefc;--mut:#9aa0c8;--line:#2b3160;--acc:#7b86ff;--on:#0e1124;--ok:#3ddc9a;--soft:#222850;color-scheme:dark}
+*,*:before,*:after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 Onest,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:20px 16px 48px}
+h1{font:700 clamp(22px,4vw,34px)/1.15 Unbounded,Onest,system-ui,sans-serif;margin:8px 0 20px;letter-spacing:-.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--mut);font-size:14px;min-height:32px}
+.top button{background:none;border:0;padding:4px 2px;color:var(--mut);text-decoration:underline;text-underline-offset:3px}
+.top button:hover{color:var(--ink)}
+.top .cur{color:var(--ink);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.tile{position:relative;aspect-ratio:1/1;border:0;border-radius:22px 22px 22px 6px;background:var(--c);color:#fff;text-align:left;padding:14px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.tile b{position:absolute;right:-6px;top:-22px;font:700 130px/1 Unbounded,sans-serif;opacity:.28}
+.tile span{font:600 18px/1.2 Onest,sans-serif;position:relative}
+.tile:hover{transform:translateY(-3px)}
+.tile{transition:transform .15s}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.cat{background:var(--surf);border:1.5px solid var(--line);border-radius:14px;padding:18px 16px;text-align:left;font-weight:600;font-size:17px}
+.cat:hover{border-color:var(--acc);background:var(--soft)}
+.saved{margin-top:32px}
+.saved h2{font:600 16px Onest,sans-serif;margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.sv{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;background:var(--surf);overflow:hidden}
+.sv button{background:none;border:0;padding:7px 12px}
+.sv button+button{color:var(--mut);padding:7px 11px;border-left:1px solid var(--line)}
+.lay{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+@media (max-width:760px){.lay{grid-template-columns:1fr}}
+.fl{background:var(--surf);border:1.5px solid var(--line);border-radius:16px;padding:6px 16px 16px}
+.g{padding:14px 0;border-bottom:1px solid var(--line)}
+.g:last-of-type{border-bottom:0}
+.g label{display:block;font-weight:600;font-size:14px;margin-bottom:8px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 11px;font-size:14px}
+.seg button.on{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.rg{display:flex;align-items:center;gap:8px;color:var(--mut)}
+.rg input{width:100%;min-width:0;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px 10px;font:inherit}
+.reset{width:100%;margin-top:6px;background:none;border:1.5px dashed var(--line);border-radius:10px;padding:8px;color:var(--mut)}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.bar #cnt{font-weight:600;margin-right:auto}
+.bar select,.bar button{border:1.5px solid var(--line);background:var(--surf);color:var(--ink);border-radius:10px;padding:7px 12px;font:inherit;font-size:14px}
+.bar button{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:600}
+.it{display:grid;grid-template-columns:1fr auto;gap:6px 16px;background:var(--surf);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.it h3{margin:0;font:600 17px/1.3 Onest,sans-serif}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.tg{font-size:12.5px;background:var(--soft);border-radius:7px;padding:2px 8px}
+.tg.ok{color:var(--ok);font-weight:600}
+.sl{grid-column:1;color:var(--mut);font-size:14px;display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--ok)}
+.pr{grid-row:1/3;grid-column:2;text-align:right;align-self:center;font:700 20px Unbounded,Onest,sans-serif;white-space:nowrap}
+.pr small{display:block;font:400 12px Onest,sans-serif;color:var(--mut)}
+.empty{padding:32px 16px;text-align:center;color:var(--mut);border:1.5px dashed var(--line);border-radius:14px}
+.note{margin-top:20px;font-size:13px;color:var(--mut)}
+.bar0{position:relative;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.themes{display:flex;gap:6px}
+.thp{position:absolute;right:0;top:100%;margin-top:8px;z-index:20;width:min(460px,calc(100vw - 32px));max-height:70vh;overflow:auto;background:var(--surf);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px 4px}
+.thp h3{font:600 13px Onest,sans-serif;margin:4px 0 8px;color:var(--mut)}
+.thg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-bottom:12px}
+.thg button{justify-content:flex-start;text-align:left}
+.themes button{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--surf);border-radius:999px;padding:5px 12px 5px 6px;font-size:13px}
+.themes button.on{border-color:var(--acc);background:var(--soft)}
+.themes i{width:18px;height:18px;border-radius:50%;border:1px solid var(--line)}
+.pv{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-bottom:10px}
+.pv button{border:1.5px solid var(--line);background:var(--surf);border-radius:999px;padding:4px 12px;font-size:13px}
+.pv button.on{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.lf{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.adm{border:1.5px solid var(--acc);background:var(--soft);border-radius:999px;padding:5px 14px;font-size:13px;font-weight:600}
+.act{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--surf);border:1.5px solid var(--line);border-radius:16px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));margin-top:14px;z-index:5}
+.act button{min-height:48px;padding:0 22px;border-radius:12px;font-weight:700;font-size:16px;border:0;margin-left:auto}
+.go{background:var(--acc);color:var(--on)}
+.stop{background:var(--soft);color:var(--ink);border:1.5px solid var(--acc)!important}
+.rn{color:var(--ok);font-size:14px}
+body.ph main{max-width:400px}
+body.ph .lay{grid-template-columns:1fr}
+body.ph .thp{width:100%}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}.tile:hover{transform:none}}
+.mh{font:600 18px Onest,sans-serif;margin:28px 0 12px}
+.mb{border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 12px;font-size:14px;min-height:40px}
+.ma{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-self:center}
+#sort,#save,#cnt{display:none}
+@media (max-width:520px){.it{grid-template-columns:1fr}.ma{justify-content:flex-start}}
+</style>
+<script src="https://telegram.org/js/telegram-web-app.js"></script></head>
+<body>
+<main>
+<div class="pv" id="pv" style="display:none"></div>
+<div class="bar0"><div class="lf"><button class="adm" id="adm" hidden>Админ</button><div class="top" id="cr"></div></div><div class="themes" id="th"></div></div>
+<div id="app"></div>
+<p class="note"></p>
+</main>
+<script>
+var G=[{id:"fortnite",n:"Fortnite",c:"#4a3bff",cur:"V-Bucks"},{id:"cs2",n:"CS2",c:"#d9780f",cur:"Предметы"},{id:"minecraft",n:"Minecraft",c:"#3e8e2f",cur:"Minecoins"}];
+var PL={fortnite:["(PC) Battle Royale","(PC) Save the World","(PS) Battle Royale","(PS) Save the World","(Xbox) Battle Royale","(Xbox) Save the World"]};
+var PLD=["PC","PlayStation","Xbox","Mobile"];
+var SELL=["NeoShop","AlexGames","ProfiMarket","SkinHub","Kotya77","FastDrop","Mirage","TopSeller"];
+var EXT=["быстро, за 5 минут","с гарантией","пакет «Стандарт»","пакет «Макс»","по запросу","выгодный курс"];
+var RANGE={cur:[60,4000],pve:[150,2500],srv:[200,3000],boost:[300,6000],oth:[50,1500],don:[100,5000]};
+var $=function(s){return document.querySelector(s)};
+var app=$("#app"),cr=$("#cr");
+var S={game:null,cat:null,f:null,saved:[],cache:{}};
+try{S.saved=JSON.parse(localStorage.getItem("doska-saved")||"[]")||[]}catch(e){S.saved=[]}
+function persist(){try{localStorage.setItem("doska-saved",JSON.stringify(S.saved))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function defF(){return{platform:"Все",method:"Все",type:"all",sMin:"",sMax:"",online:"both",deliv:"both",pMin:"",pMax:"",sort:"asc"}}
+function gm(){return G.filter(function(g){return g.id===S.game})[0]}
+var GI=0;function GG(t,s){return{k:"g_"+(++GI),t:t,o:s.split("|")}}
+function resetF(){S.f=defF();schema().forEach(function(t){if(t.k&&t.k.indexOf("g_")===0)S.f[t.k]="Все"})}
+var SV="Bedrock + Java|Hypixel|AresMine|ArtyGrief|AstrumMC|BigCraft|BravoHVH|CakeWorld|CubeCraft|CubeWorld|CubixWorld|DexLand|DonutSMP|FrizMine|FrozyTime|FunSky|FunTime 1.21|FunTime Bedrock|GribLand|HappyWorld|HolyTime.su|HolyWorld|Howemine|HypeMC|IceWorld|LegendsGrief|Loliland|Lonygrief|MasedWorld|MCC Island|MCZone|MineBlaze|MinePe|MusteryWorld|Nevertime|OreMine|ParkourBeat|Phoenix|Politmine|ReallyWorld|ReallyWorld 1.21|RPM Bosshunt|RPM North|RPM South|RPM West|SkyBars|SkyTime|SpaceTimes 1.16|SpaceTimes 1.21|SpookyTime 1.16|SpookyTime 1.21|SunRise|TeslaCraft|VimeWorld|WellMine|WynnCraft|Другие серверы";
+var RK="Нет ранга|Калибровка|Скрытое звание|SILVER I|SILVER II|SILVER III|SILVER IV|SILVER ELITE|SILVER ELITE MASTER|GOLD NOVA I|GOLD NOVA II|GOLD NOVA III|GOLD NOVA MASTER|MASTER GUARDIAN I|MASTER GUARDIAN II|MASTER GUARDIAN ELITE|DISTINGUISHED MASTER GUARDIAN|LEGENDARY EAGLE|LEGENDARY EAGLE MASTER|SUPREME MASTER FIRST CLASS|THE GLOBAL ELITE",RKA=RK.split("|"),BRK=[];
+for(var bi=3;bi<RKA.length-1;bi++)BRK.push(RKA[bi]+" - "+RKA[bi+1]);
+var MAPS="Dust 2|Mirage|Train|Nuke|Overpass|Inferno|Ancient|Vertigo|Anubis|Office|Cache".split("|");
+var RES="Активная батарея|Батарейки|Бекон|Болты и гайки|Волокнистая верёвка|Волокнистые растения|Доски|Кварцевый кристалл|Клейкая лента|Клейкая смола|Крутящаяся штука|Малахитовая руда|Мёд|Медная руда|Мелкозернистый минеральный порошок|Необработанная руда|Необработанный минеральный порошок|Обожжённый минеральный порошок|Обсидиановая руда|Обычная верёвка|Обычный минеральный порошок|Окисленный минеральный порошок|Порох|Простые запчасти|Прочная верёвка|Прочные запчасти|Ржавые запчасти|Светлая руда|Серебряная руда|Солнечный кристалл|Тёмный кристалл|Уголь|Фирменные запчасти|Цветочные лепестки|Эффективные запчасти|Прочее";
+var A3=["online","deliv","price"],SRV=[GG("Сервер",SV),"online","deliv","price"];
+var MCSC={"Аккаунты":[GG("Сервер",SV),GG("Наличие данных","Все данные по аккаунту|Частичные данные по аккаунту"),"type","online","deliv","price"],
+"Ключи":[{k:"platform",o:["PC","PS","XBox"]},{k:"method",o:["Цифровой ключ","С заходом на аккаунт"]},"online","deliv","price"],
+"Minecoins":A3,"Валюта":[GG("Сервер",SV),"online","price"],
+"Донат":[GG("Сервер",SV),GG("Тип","Кейсы|Валюта|Другой донат|Подарочные карты|Привилегии|Скины|Услуги"),"online","price"],
+"Предметы":SRV,"Плащи":A3,"Коды":A3,
+"Услуги":[GG("Сервер",SV),GG("Тип услуги","Буст|Дизайн|Моды|Настройка сервера|Плагины|Ресурс-паки|Строительство|Прочее"),"online","price"],
+"Game Pass":A3,"Конфиги":SRV,"Гайды":SRV,"Ресурс-паки":SRV,"Twitch Drops":A3,"Онлайн активации":A3,
+"Прочее":[GG("Сервер",SV),GG("Тип","DLC|Аватарки|Гайды|Графика|Паки|Прочее"),"online","deliv","price"]};
+var FT="Официально (рекомендуется)|Прочее",FO="Код активации|Подарком|С заходом на аккаунт";
+var FNSC={"В-баксы":["platform",GG("Тип пополнения",FT),GG("Способ получения",FO),"online","deliv","price"],
+"Донат":["platform",GG("Тип","Боевой пропуск|Наборы|Скины|Предметы|Отряды (The Crew)|Прочее"),GG("Тип пополнения",FT),GG("Способ получения",FO),"online","deliv","price"],
+"PvE":[{k:"platform",o:["(PC) Save the World","(PS) Save the World","(Xbox) Save the World"]},GG("Тип предмета","Ресурсы|Оружие|Прочее"),GG("Тип ресурсов",RES),"online","price"],
+"Услуги":["platform",GG("Тип услуги","Обучение|Активация доната|Прокачка боевого пропуска|Задания|Миссии"),"online","price"],
+"Буст":["platform",GG("Диапазон","Бронзовый - Серебряный|Серебряный - Золотой|Золотой - Платиновый|Платиновый - Бриллиантовый|Бриллиантовый - Элитный|Элитный - Легендарный|Легендарный - Нереальный"),"online","price"],
+"Twitch Drops":A3,"Прочее":["platform","online","deliv","price"]};
+var CSSC={"Аккаунты":[GG("Инвентарь","Инвентарь пуст|С инвентарем"),GG("PRIME","Есть|Нет"),GG("FACEIT зарегистрирован","Да|Нет")].concat(MAPS.map(function(m){return GG(m+": ранг",RK)}),["type","online","deliv","price"]),
+"Prime":[GG("Страна","Аргентина|Казахстан|Россия|Турция|Украина|Другая страна"),GG("Способ получения","Пополнением баланса|С заходом на аккаунт"),"online","price"],
+"FACEIT Premium":[GG("Тип","ESEA League Pass|FACEIT Plus|FACEIT Premium|Карточки профиля|Смена никнейма|Токены"),GG("Срок","1 день|1 месяц|3 месяца|6 месяцев|12 месяцев"),"online","price"],
+"Арсенал":[GG("Способ получения","С заходом на аккаунт|Без захода на аккаунт"),"online","deliv","price"],
+"Скины":[GG("Тип","Агент|Перчатки|Нож|Пистолет|Дробовик|Пистолет-пулемёт|Винтовка|Снайперская винтовка|Пулемёт|Брелок|Комплект|Прочее"),GG("Раритетность","Базового класса|Ширпотреб|Промышленное качество|Армейское качество|Запрещенное|Засекреченное|Тайное|Высшего класса|Мастерский|Примечательного типа|Экзотичного вида|Контрабандное|Экстраординарного типа"),GG("Качество","Немного поношенное|Закаленное в боях|Прямо с завода|Поношенное|После полевых испытаний|Не покрашено|Исключительное"),"type","online","price"],
+"Кейсы":["online","price"],
+"Буст":[GG("Тип","Competitive|FACEIT|Premier|The Armory Pass|Калибровка|Калибровка FACEIT|Напарники|Прочее"),GG("Тип буста","Solo|Party"),GG("Способ","Вручную|С ПО"),GG("Диапазон Competitive",BRK.join("|")),GG("Диапазон Premier","0-5000 (цена за 1000)|5000-10000 (цена за 1000)|10000-15000 (цена за 1000)|15000-20000 (цена за 1000)|20000+ (цена за 1000)"),"online","price"],
+"Обучение":["online","price"],"Прочее":[GG("Тип","Бинды|Гайды|Оптимизация PC|Прицелы|Прочее"),"online","deliv","price"]};
+var CFG={minecraft:{cats:["Аккаунты","Ключи","Minecoins","Валюта","Донат","Предметы","Плащи","Коды","Услуги","Game Pass","Конфиги","Гайды","Ресурс-паки","Twitch Drops","Онлайн активации","Прочее"],sc:MCSC}};
+CFG.fortnite={cats:["Аккаунты","В-баксы","Донат","PvE","Услуги","Буст","Twitch Drops","Прочее"],sc:FNSC};
+CFG.cs2={cats:["Аккаунты","Prime","FACEIT Premium","Арсенал","Скины","Кейсы","Буст","Обучение","Прочее"],sc:CSSC};
+function schema(){var c=CFG[S.game];if(c&&c.sc[S.cat])return c.sc[S.cat];return S.cat==="Аккаунты"?["platform","type","skins","online","deliv","price"]:["type","online","deliv","price"]}
+function cats(){var g=gm();if(CFG[g.id])return CFG[g.id].cats;var c=["Аккаунты",g.cur,"Донат"];if(g.id==="fortnite")c.push("PvE");c.push("Услуги","Буст","Прочее");return c}
+function rng(seed){var a=seed;return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hash(s){var h=7;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return h}
+function data(){
+  var k=S.game+"|"+S.cat;if(S.cache[k])return S.cache[k];
+  var g=gm(),r=rng(hash(k)),acc=S.cat==="Аккаунты",sch=schema(),out=[],pg=sch.filter(function(t){return t==="platform"||t.k==="platform"})[0],pls=pg?(pg.o||PL[g.id]||PLD):null,mg=sch.filter(function(t){return t.k==="method"})[0];
+  var rk=S.cat===g.cur?"cur":S.cat==="PvE"?"pve":S.cat==="Услуги"?"srv":S.cat==="Буст"?"boost":S.cat==="Донат"?"don":"oth";
+  for(var i=0;i<40;i++){
+    var rent=r()<.3&&sch.indexOf("type")>=0,skins=Math.floor(Math.pow(r(),2)*400),price,title;
+    if(acc){price=Math.round(300+skins*(4+r()*8));if(rent)price=Math.round(80+skins*.6);title="Аккаунт "+g.n+", скинов: "+skins}
+    else{var a=RANGE[rk];price=Math.round(a[0]+r()*(a[1]-a[0]));if(rent)price=Math.round(price*.3);title=S.cat+": "+EXT[Math.floor(r()*EXT.length)]}
+    out.push({title:title,platform:pls?pls[Math.floor(r()*pls.length)]:"",method:mg?mg.o[Math.floor(r()*mg.o.length)]:"",rent:rent,skins:acc?skins:0,online:r()<.55,deliv:r()<.5,price:price,seller:SELL[Math.floor(r()*SELL.length)],rate:(4+r()).toFixed(1),deals:Math.floor(r()*900)+5})
+  }
+  out.forEach(function(it){sch.forEach(function(t){if(t.k&&t.k.indexOf("g_")===0)it[t.k]=t.o[Math.floor(r()*t.o.length)]})});
+  S.cache[k]=out;return out;
+}
+function crumbs(){
+  var h='<button data-nav="0">Игры</button>';
+  if(S.game){h+=" › "+(S.cat?'<button data-nav="1">'+esc(gm().n)+"</button>":'<span class="cur">'+esc(gm().n)+"</span>")}
+  if(S.cat)h+=' › <span class="cur">'+esc(S.cat)+"</span>";
+  cr.innerHTML=h;
+}
+function home(){
+  S.game=S.cat=null;crumbs();
+  var h="<h1>Выбери игру</h1><div class='tiles'>"+G.map(function(g){return '<button class="tile" style="--c:'+g.c+'" data-game="'+g.id+'"><b>'+g.n[0]+"</b><span>"+g.n+"</span></button>"}).join("")+"</div>";
+  if(S.saved.length){h+='<div class="saved"><h2>Сохранённые поиски</h2><div class="chips">'+S.saved.map(function(s,i){return '<span class="sv"><button data-sv="'+i+'">'+esc(s.label)+'</button><button data-rm="'+i+'" aria-label="Удалить поиск">×</button></span>'}).join("")+"</div></div>"}
+  app.innerHTML=h;
+}
+function pickCat(){
+  S.cat=null;S.f=null;crumbs();
+  app.innerHTML="<h1>"+esc(gm().n)+": что нужно?</h1><div class='cats'>"+cats().map(function(c){return '<button class="cat" data-cat="'+esc(c)+'">'+esc(c)+"</button>"}).join("")+"</div>";
+}
+function seg(k,opts){return '<div class="seg" data-k="'+k+'">'+opts.map(function(o){return '<button data-v="'+esc(o[0])+'" class="'+(S.f[k]===o[0]?"on":"")+'">'+esc(o[1])+"</button>"}).join("")+"</div>"}
+function rg(a,b){return '<div class="rg"><input inputmode="numeric" data-k="'+a+'" placeholder="от" aria-label="от" value="'+esc(S.f[a])+'"><span>—</span><input inputmode="numeric" data-k="'+b+'" placeholder="до" aria-label="до" value="'+esc(S.f[b])+'"></div>'}
+function filters(){
+  if(!S.f)S.f=defF();
+  var acc=S.cat==="Аккаунты",pls=PL[S.game]||PLD,yn=[["yes","Да"],["no","Нет"],["both","Оба значения"]];
+  crumbs();
+  var f='<aside class="fl">',sc=schema();
+  sc.forEach(function(t){var o=typeof t==="string"?{k:t}:t,k=o.k,l,b,pr=function(p){return[p,p]};
+    if(k==="platform"){l="Платформа";b=seg("platform",[["Все","Все"]].concat((o.o||pls).map(pr)))}
+    else if(k==="method"){l="Способ получения";b=seg("method",[["Все","Все"]].concat(o.o.map(pr)))}
+    else if(k.indexOf("g_")===0){l=o.t;b=seg(k,[["Все","Все"]].concat(o.o.map(pr)))}
+    else if(k==="type"){l="Тип сделки";b=seg("type",[["all","Все"],["sale","Продажа"],["rent","Аренда"]])}
+    else if(k==="skins"){l="Скины";b=rg("sMin","sMax")}
+    else if(k==="online"){l="Только продавцы онлайн";b=seg("online",yn)}
+    else if(k==="deliv"){l="Автоматическая доставка";b=seg("deliv",yn)}
+    else{l="Цена, ₽";b=rg("pMin","pMax")}
+    f+='<div class="g"><label>'+l+"</label>"+b+"</div>"});
+  f+='<button class="reset" id="reset">Сбросить фильтры</button></aside>';
+  app.innerHTML="<h1>"+esc(gm().n)+": "+esc(S.cat.toLowerCase())+'</h1><div class="lay">'+f+'<section><div class="bar"><span id="cnt"></span><select id="sort" aria-label="Сортировка"><option value="asc">Сначала дешевле</option><option value="desc">Сначала дороже</option></select><button id="save">Сохранить поиск</button></div><div id="list"></div></section></div><div class="act" id="act"></div>';
+  $("#sort").value=S.f.sort;
+  list();
+}
+function list(){
+  var f=S.f,n=function(v){return v===""?null:+v};
+  var sMin=n(f.sMin),sMax=n(f.sMax),pMin=n(f.pMin),pMax=n(f.pMax);
+  var res=data().filter(function(x){
+    if(f.platform!=="Все"&&x.platform!==f.platform)return false;
+    if(f.method!=="Все"&&x.method!==f.method)return false;
+    for(var q in f){if(q.indexOf("g_")===0&&f[q]!=="Все"&&x[q]!==f[q])return false}
+    if(f.type==="sale"&&x.rent)return false;
+    if(f.type==="rent"&&!x.rent)return false;
+    if(sMin!==null&&x.skins<sMin)return false;
+    if(sMax!==null&&x.skins>sMax)return false;
+    if(f.online==="yes"&&!x.online)return false;
+    if(f.online==="no"&&x.online)return false;
+    if(f.deliv==="yes"&&!x.deliv)return false;
+    if(f.deliv==="no"&&x.deliv)return false;
+    if(pMin!==null&&x.price<pMin)return false;
+    if(pMax!==null&&x.price>pMax)return false;
+    return true;
+  }).sort(function(a,b){return f.sort==="asc"?a.price-b.price:b.price-a.price});
+  $("#cnt").textContent="Найдено: "+res.length;drawAct();
+  $("#list").innerHTML=res.length?res.map(function(x){
+    return '<article class="it"><div><h3>'+esc(x.title)+'</h3><div class="tags">'+(x.platform?'<span class="tg">'+esc(x.platform)+"</span>":"")+(x.method?'<span class="tg">'+esc(x.method)+"</span>":"")+'<span class="tg">'+(x.rent?"Аренда":"Продажа")+"</span>"+(x.deliv?'<span class="tg ok">Автодоставка</span>':"")+'</div></div><div class="pr">'+x.price.toLocaleString("ru-RU")+" ₽"+(x.rent?"<small>за сутки</small>":"")+'</div><div class="sl"><span class="dot '+(x.online?"on":"")+'"></span>'+esc(x.seller)+" · "+(x.online?"онлайн":"не в сети")+" · ★ "+x.rate+" · сделок: "+x.deals+"</div></article>";
+  }).join(""):'<div class="empty">Ничего не найдено. Расширь диапазон цены или сбрось фильтры.</div>';
+}
+function label(){
+  var f=S.f,p=[gm().n,S.cat];
+  if(f.platform!=="Все")p.push(f.platform);
+  if(f.type!=="all")p.push(f.type==="sale"?"продажа":"аренда");
+  if(f.pMin||f.pMax)p.push((f.pMin||0)+"–"+(f.pMax||"∞")+" ₽");
+  return p.join(", ");
+}
+document.addEventListener("click",function(e){
+  if(thOpen&&!e.target.closest(".themes")){thOpen=false;theme(S.ui)}
+  var b=e.target.closest("button");if(!b)return;var d=b.dataset;
+  if(b.id==="thb"){thOpen=!thOpen;theme(S.ui);return}
+  if(d.pv!==undefined){setPv(d.pv);return}
+  if(b.id==="adm"){adminView();return}
+  if(b.id==="go"){startSearch();return}
+  if(b.id==="stop"){stopSearch();return}
+  if(d.mt!==undefined){mineToggle(d.mt,d.on==="1");return}
+  if(d.md!==undefined){mineDel(d.md);return}
+  if(d.th!==undefined){theme(d.th);return}
+  if(d.game){S.game=d.game;pickCat();return}
+  if(d.cat){S.cat=d.cat;resetF();filters();return}
+  if(d.nav==="0"){home();return}
+  if(d.nav==="1"){pickCat();return}
+  if(d.sv!==undefined){var s=S.saved[+d.sv];S.game=s.game;S.cat=s.cat;S.f=Object.assign(defF(),s.f);filters();return}
+  if(d.rm!==undefined){S.saved.splice(+d.rm,1);persist();home();return}
+  if(b.id==="reset"){resetF();filters();return}
+  if(b.id==="save"){S.saved.push({game:S.game,cat:S.cat,f:Object.assign({},S.f),label:label()});persist();b.textContent="Сохранено";return}
+  var sg=b.parentElement;
+  if(sg&&sg.classList.contains("seg")){S.f[sg.dataset.k]=d.v;[].forEach.call(sg.children,function(c){c.classList.toggle("on",c===b)});list()}
+});
+document.addEventListener("input",function(e){
+  var t=e.target;
+  if(t.tagName==="INPUT"&&t.dataset.k){S.f[t.dataset.k]=t.value.replace(/\D/g,"").slice(0,9);list()}
+});
+document.addEventListener("change",function(e){if(e.target.id==="sort"){S.f.sort=e.target.value;list()}});
+function mkC(id,name,d,bg,surf,ink,mut,line,acc,on,ok,soft){return[id,name,acc,bg,{bg:bg,surf:surf,ink:ink,mut:mut,line:line,acc:acc,on:on,ok:ok,soft:soft,dark:d}]}
+var TC=[mkC("c-sunset","Закат",1,"#2b1633","#3a1f45","#ffe9d6","#dcb0bd","#5a3166","#ff9a5c","#2b1633","#9be8b0","#4a2a58"),mkC("c-lagoon","Лагуна",1,"#0f3a40","#16505a","#e4fbf4","#a3dcd3","#23707a","#ffd166","#0f3a40","#8ef0b8","#1c5f69"),mkC("c-dusk","Сумерки",1,"#1f2350","#2b3070","#e9ebff","#b2b8f0","#404a96","#5ee0c0","#1f2350","#7ef0a8","#353b86"),mkC("c-peach","Персик",0,"#f9e3d3","#fdf1e6","#3a2230","#7b5a64","#ebc9b3","#c2325f","#fff4ee","#2e7d55","#f4d0bd"),mkC("c-mint","Мята",0,"#d9f0e6","#eaf8f1","#17382f","#4d7469","#b3dccb","#187563","#f0fbf6","#1b7f4f","#c3e6d7"),mkC("c-lavender","Лаванда",0,"#e6e0f7","#f3effc","#2b2250","#665b95","#cfc6ec","#6b4fd8","#f6f3ff","#1f7a5a","#d6cdf2")];
+function mkT(d,id,name,acc,soft){var v=d?{bg:"#0a0a0a",surf:"#151515",ink:"#f5f5f5",mut:"#a8a8a8",line:"#2e2e2e",on:"#0a0a0a",ok:"#4ade80"}:{bg:"#f5f5f5",surf:"#ffffff",ink:"#111111",mut:"#5f5f5f",line:"#e0e0e0",on:"#ffffff",ok:"#0e7a48"};v.acc=acc;v.soft=soft;v.dark=d;return[id,name,acc,v.bg,v]}
+var TB=[mkT(1,"k-red","Чёрный и красный","#ff4a4a","#2a1313"),mkT(1,"k-gold","Чёрный и золотой","#ffc400","#2a2310"),mkT(1,"k-cyan","Чёрный и голубой","#22d3ee","#0f2630"),mkT(1,"k-lime","Чёрный и лаймовый","#a3e635","#1c2a10"),mkT(1,"k-violet","Чёрный и фиолетовый","#a78bfa","#20183a"),mkT(1,"k-orange","Чёрный и оранжевый","#ff8a1f","#2a1a0e")];
+var TW=[mkT(0,"w-red","Белый и красный","#d62828","#fde8e8"),mkT(0,"w-blue","Белый и синий","#1d4ed8","#e3ebff"),mkT(0,"w-green","Белый и зелёный","#15803d","#dff3e5"),mkT(0,"w-purple","Белый и фиолетовый","#7e22ce","#f0e4fb"),mkT(0,"w-orange","Белый и оранжевый","#c2410c","#ffeadb"),mkT(0,"w-pink","Белый и розовый","#be185d","#fce4ef")];
+var ALL=TC.concat(TB,TW);
+var VK=["bg","surf","ink","mut","line","acc","on","ok","soft"],thOpen=false;
+function sw(t,v){return '<button data-th="'+t[0]+'" class="'+(t[0]===v?"on":"")+'"><i style="background:linear-gradient(135deg,'+t[2]+' 50%,'+t[3]+' 50%)"></i>'+t[1]+"</button>"}
+function drawTh(v,cur){
+  var g=function(h,a){return "<h3>"+h+'</h3><div class="thg">'+a.map(function(t){return sw(t,v)}).join("")+"</div>"};
+  $("#th").innerHTML='<button id="thb" aria-expanded="'+thOpen+'"><i style="background:linear-gradient(135deg,'+cur[2]+' 50%,'+cur[3]+' 50%)"></i>Темы: '+cur[1]+"</button>"+(thOpen?'<div class="thp">'+g("Цветные",TC)+g("С чёрным",TB)+g("С белым",TW)+"</div>":"");
+}
+function theme(v){
+  var r=document.documentElement,cur=null;
+  ALL.forEach(function(t){if(t[0]===v)cur=t});
+  if(!cur){cur=ALL[0];v=cur[0]}
+  S.ui=v;
+  VK.forEach(function(k){r.style.removeProperty("--"+k)});
+  if(v)r.setAttribute("data-ui",v);else r.removeAttribute("data-ui");
+  if(cur[4]){VK.forEach(function(k){r.style.setProperty("--"+k,cur[4][k])});r.style.colorScheme=cur[4].dark?"dark":"light"}else r.style.colorScheme="";
+  try{localStorage.setItem("doska-ui",v)}catch(e){}
+  drawTh(v,cur);
+}
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&thOpen){thOpen=false;theme(S.ui)}});
+S.run=false;S.admin=false;S.ph=false;
+function drawPv(){
+  $("#pv").innerHTML='<span>Предпросмотр:</span><button data-pv="pc" class="'+(S.ph?"":"on")+'">ПК</button><button data-pv="ph" class="'+(S.ph?"on":"")+'">Телефон</button><button data-pv="ad" class="'+(S.admin?"on":"")+'">Я админ</button>';
+  document.body.classList.toggle("ph",S.ph);$("#adm").hidden=!S.admin;
+}
+function setPv(v){if(v==="ad")S.admin=!S.admin;else S.ph=v==="ph";drawPv()}
+function adminView(){S.game=S.cat=null;crumbs();app.innerHTML='<h1>Админ-панель</h1><div class="empty">Здесь появятся функции администратора. Панель видна только тем, чьи Telegram ID внесены в список.</div>'}
+function drawAct(){var a=$("#act");if(!a)return;a.innerHTML=S.run?'<span class="rn">● Поиск запущен. Напишу в чат, когда появится подходящее объявление</span><button id="stop" class="stop">Закончить поиск</button>':'<button id="go" class="go">Начать поиск</button>'}
+drawPv();
+var URLS={fortnite:{"Аккаунты":248,"В-баксы":928,"Донат":1208,"PvE":364,"Услуги":249,"Буст":1691,"Twitch Drops":3262,"Прочее":1098},
+minecraft:{"Аккаунты":221,"Ключи":1015,"Minecoins":1016,"Валюта":1596,"Донат":1753,"Предметы":222,"Плащи":3479,"Коды":4720,"Услуги":223,"Game Pass":1544,"Конфиги":1754,"Гайды":2054,"Ресурс-паки":2539,"Twitch Drops":3377,"Онлайн активации":3964,"Прочее":1099},
+cs2:{"Аккаунты":1350,"Prime":1907,"FACEIT Premium":2301,"Арсенал":2832,"Скины":1906,"Кейсы":3601,"Буст":1836,"Обучение":1908,"Прочее":1351}};
+Object.keys(URLS).forEach(function(g){Object.keys(URLS[g]).forEach(function(c){URLS[g][c]="https://funpay.com/lots/"+URLS[g][c]+"/"})});
+var ATTR={};(function(){function a(g,c,t,x){ATTR[g+"|"+c+"|"+t]=x.split(",")}
+var OB="data-f-obtaining,data-f-obtaining2";
+a("fortnite","В-баксы","Тип пополнения","data-f-type2");a("fortnite","В-баксы","Способ получения",OB);
+a("fortnite","Донат","Тип","data-f-type");a("fortnite","Донат","Тип пополнения","data-f-type2");a("fortnite","Донат","Способ получения",OB);
+a("fortnite","PvE","Платформа","data-f-platform");a("fortnite","PvE","Тип предмета","data-f-type");a("fortnite","PvE","Тип ресурсов","data-f-resources");
+a("fortnite","Услуги","Тип услуги","data-f-type");a("fortnite","Буст","Диапазон","data-f-range");
+a("minecraft","Аккаунты","Сервер","@server");a("minecraft","Аккаунты","Наличие данных","data-f-data");
+a("minecraft","Ключи","Платформа","data-f-platform");a("minecraft","Ключи","Способ получения","data-f-method");
+a("minecraft","Валюта","Сервер","data-f-server");a("minecraft","Донат","Сервер","data-f-server");a("minecraft","Донат","Тип","data-f-type2");
+["Предметы","Конфиги","Гайды","Ресурс-паки","Услуги","Прочее"].forEach(function(c){a("minecraft",c,"Сервер","@server")});
+a("minecraft","Услуги","Тип услуги","data-f-type");a("minecraft","Прочее","Тип","data-f-type");
+a("cs2","Аккаунты","Инвентарь","data-f-invt");a("cs2","Аккаунты","PRIME","data-f-prime");a("cs2","Аккаунты","FACEIT зарегистрирован","data-f-faceitreg");
+MAPS.forEach(function(m){a("cs2","Аккаунты",m+": ранг",m==="Cache"?"data-f-cache":"data-f-rank"+m.toLowerCase().replace(" ",""))});
+a("cs2","Prime","Страна","data-f-country");a("cs2","Prime","Способ получения","data-f-method");
+a("cs2","FACEIT Premium","Тип","data-f-type");a("cs2","FACEIT Premium","Срок","data-f-quantity,data-f-quantity2");
+a("cs2","Арсенал","Способ получения","data-f-method");
+a("cs2","Скины","Тип","data-f-type");a("cs2","Скины","Раритетность","data-f-rare");a("cs2","Скины","Качество","data-f-quality");
+a("cs2","Буст","Тип","data-f-type");a("cs2","Буст","Тип буста","data-f-type2");a("cs2","Буст","Способ","data-f-method");
+a("cs2","Буст","Диапазон Competitive","data-f-competitive");a("cs2","Буст","Диапазон Premier","data-f-premier");
+a("cs2","Прочее","Тип","data-f-type")})();
+var API="https://ezmduvodqosyslpdaudq.supabase.co/functions/v1/api",TG=window.Telegram&&Telegram.WebApp;
+if(TG){try{TG.ready();TG.expand()}catch(e){}}
+function api(a,b){return fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:a,initData:TG&&TG.initData||""},b||{}))}).then(function(r){return r.json()}).catch(function(){return{ok:false,error:"network"}})}
+function say(t){if(TG&&TG.showAlert)TG.showAlert(t);else alert(t)}
+var ERRM={auth:"Открой приложение через бота в Telegram",network:"Нет связи с сервером",bad_url:"Для этого раздела нет ссылки FunPay",limit:"Максимум 10 поисков. Удали лишние",server:"Ошибка сервера, попробуй позже"};
+var YNT={yes:"Да",no:"Нет",both:"Оба значения"};
+S.mine=[];S.curId=null;
+function home(){S.game=S.cat=null;crumbs();app.innerHTML='<h1>Выбери игру</h1><div class="tiles">'+G.map(function(g){return '<button class="tile" style="--c:'+g.c+'" data-game="'+g.id+'"><b>'+g.n[0]+'</b><span>'+g.n+'</span></button>'}).join("")+'</div><div id="mine"></div>';drawMine()}
+function drawMine(){var m=$("#mine");if(!m)return;if(!S.mine.length){m.innerHTML="";return}
+ m.innerHTML='<h2 class="mh">Мои поиски</h2>'+S.mine.map(function(x){return '<div class="it"><div><h3>'+esc(x.name||x.game+" · "+x.category)+'</h3><div class="tags"><span class="tg'+(x.enabled?" ok":"")+'">'+(x.enabled?"● идёт поиск":"остановлен")+'</span></div></div><div class="ma"><button class="mb" data-mt="'+x.id+'" data-on="'+(x.enabled?0:1)+'">'+(x.enabled?"Закончить поиск":"Продолжить")+'</button><button class="mb" data-md="'+x.id+'">Удалить</button></div></div>'}).join("")}
+function loadMine(){return api("list").then(function(r){if(r.ok){S.mine=r.items;if(!S.game)drawMine()}})}
+function mineToggle(id,on){api("toggle",{id:id,on:on}).then(function(r){if(r.ok){if(!on&&S.curId===id)S.curId=null;loadMine()}else say(ERRM[r.error]||"Ошибка")})}
+function mineDel(id){var go=function(){api("delete",{id:id}).then(function(r){if(r.ok){if(S.curId===id)S.curId=null;loadMine()}else say(ERRM[r.error]||"Ошибка")})};if(TG&&TG.showConfirm)TG.showConfirm("Удалить этот поиск?",function(ok){if(ok)go()});else if(confirm("Удалить этот поиск?"))go()}
+function rngTxt(a,b){return a===""&&b===""?"любой":(a||"0")+" – "+(b||"∞")}
+function list(){var f=S.f,rows=[];
+ schema().forEach(function(t){var o=typeof t==="string"?{k:t}:t,k=o.k,l,v;
+  if(k==="platform"){l="Платформа";v=f.platform}else if(k==="method"){l="Способ получения";v=f.method}
+  else if(k.indexOf("g_")===0){l=o.t;v=f[k]}else if(k==="type"){l="Тип сделки";v={all:"Все",sale:"Продажа",rent:"Аренда"}[f.type]}
+  else if(k==="skins"){l="Скины";v=rngTxt(f.sMin,f.sMax)}else if(k==="online"){l="Продавец онлайн";v=YNT[f.online]}
+  else if(k==="deliv"){l="Автодоставка";v=YNT[f.deliv]}else{l="Цена, ₽";v=rngTxt(f.pMin,f.pMax)}
+  rows.push('<div class="sl"><span>'+esc(l)+':</span> <b>'+esc(v)+'</b></div>')});
+ $("#list").innerHTML='<div class="it" style="grid-template-columns:1fr"><h3>Условия поиска</h3>'+rows.join("")+'</div>';drawAct()}
+function drawAct(){var a=$("#act");if(!a)return;a.innerHTML=S.curId?'<span class="rn">● Поиск запущен. Напишу в этот чат, когда появится подходящее объявление</span><button id="stop" class="stop">Закончить поиск</button>':'<button id="go" class="go">Начать поиск</button>'}
+function startSearch(){if(S.busy)return;var f=S.f,url=(URLS[S.game]||{})[S.cat],ex=[],pl=null,desc=[];
+ if(!url){say(ERRM.bad_url);return}
+ function ak(t){return ATTR[S.game+"|"+S.cat+"|"+t]}
+ schema().forEach(function(t){var o=typeof t==="string"?{k:t}:t,k=o.k;
+  if(k==="platform"&&f.platform!=="Все"){desc.push(f.platform);var a=ak("Платформа");if(a)ex.push([a,f.platform]);else pl=f.platform}
+  else if(k==="method"&&f.method!=="Все"){desc.push(f.method);var m=ak("Способ получения");if(m)ex.push([m,f.method])}
+  else if(k.indexOf("g_")===0&&f[k]!=="Все"){desc.push(f[k]);var g=ak(o.t);if(g)ex.push([g,f[k]])}});
+ var p={game:gm().n,category:S.cat,section_url:url,platform:pl,deal_type:f.type,skins_min:f.sMin,skins_max:f.sMax,price_min:f.pMin,price_max:f.pMax,online:f.online,deliv:f.deliv,extra:ex,name:gm().n+" · "+S.cat+(desc.length?" · "+desc.slice(0,3).join(", "):"")};
+ S.busy=true;api("save",{p:p}).then(function(r){S.busy=false;if(r.ok){S.curId=r.id;drawAct();loadMine()}else say(ERRM[r.error]||("Ошибка: "+r.error))})}
+function stopSearch(){if(!S.curId)return;var id=S.curId;api("toggle",{id:id,on:false}).then(function(r){if(r.ok){S.curId=null;drawAct();loadMine()}else say(ERRM[r.error]||"Ошибка")})}
+function adminView(){S.game=S.cat=null;crumbs();app.innerHTML='<h1>Админ-панель</h1><div id="admbox" class="empty">Загрузка…</div>';api("admin").then(function(r){var b=$("#admbox");if(b)b.innerHTML=r.ok?"Пользователей: "+r.users+"<br>Активных поисков: "+r.active+"<br><br>Остальные функции добавим позже.":"Нет доступа"})}
+function tgInit(){api("me").then(function(r){if(r.ok){S.admin=!!r.admin;drawPv();loadMine()}else{app.innerHTML='<h1>Открой через бота</h1><div class="empty">'+esc(ERRM[r.error]||"Ошибка")+'</div>'}})}
+var u0="";try{u0=localStorage.getItem("doska-ui")||""}catch(e){}
+theme(u0);
+home();tgInit();
+</script>
+</body>
+</html>
