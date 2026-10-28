@@ -149,6 +149,9 @@ def insert_seen(user_id, ids):
     return inserted
 
 
+FIRST_LIMIT = 10  # сколько уже существующих лотов присылать при создании поиска
+
+
 def notify(chat_id, text):
     r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
                       json={"chat_id": chat_id, "text": text, "disable_web_page_preview": True}, timeout=30)
@@ -156,12 +159,12 @@ def notify(chat_id, text):
         print("! telegram:", r.status_code, r.text[:200])
 
 
-def describe(f, l):
+def describe(f, l, head="Появилось"):
     if l["price_rub"] is not None:
         price = f"{round(l['price_rub']):,} ₽".replace(",", " ")
     else:
         price = f"{l['price']:g} {l['unit']}"
-    parts = [f"Появилось: {f['game']}, {f['category'].lower()}"]
+    parts = [f"{head}: {f['game']}, {f['category'].lower()}"]
     if l["skins"] is not None and l["skins"] >= 0:
         parts.append(f"скинов: {l['skins']}")
     parts.append(price)
@@ -178,7 +181,13 @@ def process(f, lots):
         insert_seen(f["user_id"], [l["id"] for l in found])
         requests.patch(f"{SB}/rest/v1/filters", headers=DB, params={"id": f"eq.{f['id']}"},
                        json={"baselined": True}, timeout=30).raise_for_status()
-        print(f"filter {f['id']}: первый запуск, запомнил {len(found)} лотов без уведомлений")
+        first = found[:FIRST_LIMIT]
+        for l in first:
+            notify(chat, describe(f, l, "Уже есть"))
+            time.sleep(0.5)
+        if len(found) > len(first):
+            notify(chat, f"Это {len(first)} из {len(found)} подходящих лотов. Остальные не показываю, дальше буду присылать только новые.")
+        print(f"filter {f['id']}: первый запуск, отправил {len(first)} из {len(found)} лотов")
         return
     new_ids = insert_seen(f["user_id"], [l["id"] for l in found])
     sent = 0
