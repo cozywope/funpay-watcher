@@ -149,14 +149,56 @@ def insert_seen(user_id, ids):
     return inserted
 
 
-FIRST_LIMIT = 10  # сколько уже существующих лотов присылать при создании поиска
+PAGE_SIZE = 10      # лотов на одной странице
+MAX_ITEMS = 200     # сколько лотов максимум хранить для листания
 
 
-def notify(chat_id, text):
-    r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
-                      json={"chat_id": chat_id, "text": text, "disable_web_page_preview": True}, timeout=30)
+def notify(chat_id, text, markup=None):
+    body = {"chat_id": chat_id, "text": text, "disable_web_page_preview": True}
+    if markup:
+        body["reply_markup"] = markup
+    r = requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage", json=body, timeout=30)
     if not r.ok:
         print("! telegram:", r.status_code, r.text[:200])
+
+
+def describe_short(l, n):
+    if l["price_rub"] is not None:
+        price = f"{round(l['price_rub']):,} ₽".replace(",", " ")
+    else:
+        price = f"{l['price']:g} {l['unit']}"
+    top = f"{n}. {price}"
+    if l["skins"] is not None and l["skins"] >= 0:
+        top += f", скинов: {l['skins']}"
+    return top + "\n" + l["title"][:120] + "\n" + l["url"]
+
+
+def page_text(head, items, page):
+    pages = (len(items) + PAGE_SIZE - 1) // PAGE_SIZE
+    chunk = items[page * PAGE_SIZE:(page + 1) * PAGE_SIZE]
+    return f"{head}\nСтраница {page + 1} из {pages} (всего {len(items)})\n\n" + "\n\n".join(chunk)
+
+
+def send_paged(chat, head, items):
+    """Шлёт сообщение с лотами; если их больше 10, добавляет стрелки листания."""
+    items = items[:MAX_ITEMS]
+    if len(items) <= PAGE_SIZE:
+        notify(chat, head + "\n\n" + "\n\n".join(items))
+        return
+    pages = (len(items) + PAGE_SIZE - 1) // PAGE_SIZE
+    r = requests.post(f"{SB}/rest/v1/lot_pages", headers={**DB, "Prefer": "return=representation"},
+                      json={"chat_id": chat, "head": head, "items": items}, timeout=30)
+    if not r.ok:
+        print("! lot_pages (создана ли таблица? выполни 02_lot_pages.sql):", r.status_code, r.text[:200])
+        notify(chat, page_text(head, items, 0))
+        return
+    pid = r.json()[0]["id"]
+    markup = {"inline_keyboard": [[
+        {"text": "◀", "callback_data": f"p:{pid}:{pages - 1}"},
+        {"text": f"1/{pages}", "callback_data": "noop"},
+        {"text": "▶", "callback_data": f"p:{pid}:1"},
+    ]]}
+    notify(chat, page_text(head, items, 0), markup)
 
 
 def describe(f, l, head="Появилось"):
@@ -181,25 +223,32 @@ def process(f, lots):
         insert_seen(f["user_id"], [l["id"] for l in found])
         requests.patch(f"{SB}/rest/v1/filters", headers=DB, params={"id": f"eq.{f['id']}"},
                        json={"baselined": True}, timeout=30).raise_for_status()
-        first = found[:FIRST_LIMIT]
-        for l in first:
-            notify(chat, describe(f, l, "Уже есть"))
-            time.sleep(0.5)
-        if len(found) > len(first):
-            notify(chat, f"Это {len(first)} из {len(found)} подходящих лотов. Остальные не показываю, дальше буду присылать только новые.")
-        print(f"filter {f['id']}: первый запуск, отправил {len(first)} из {len(found)} лотов")
+        if found:
+            notify(chat, f"Найдены новые предложения: {len(found)}")
+            head = f"{f['game']}, {f['category'].lower()}"
+            send_paged(chat, head, [describe_short(l, i + 1) for i, l in enumerate(found)])
+        print(f"filter {f['id']}: первый запуск, найдено {len(found)} лотов")
         return
     new_ids = insert_seen(f["user_id"], [l["id"] for l in found])
-    sent = 0
-    for l in found:
-        if l["id"] in new_ids:
-            notify(chat, describe(f, l))
-            sent += 1
-            time.sleep(0.5)
+    fresh = [l for l in found if l["id"] in new_ids]
+    sent = len(fresh)
+    if fresh:
+        notify(chat, f"Найдены новые предложения: {len(fresh)}")
+        head = f"{f['game']}, {f['category'].lower()}"
+        send_paged(chat, head, [describe_short(l, i + 1) for i, l in enumerate(fresh)])
     print(f"filter {f['id']}: подходит {len(found)}, новых {sent}")
 
 
+def cleanup_pages():
+    cut = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 14 * 86400))
+    try:
+        requests.delete(f"{SB}/rest/v1/lot_pages", headers=DB, params={"created_at": f"lt.{cut}"}, timeout=30)
+    except Exception as e:
+        print("! очистка lot_pages:", e)
+
+
 def main():
+    cleanup_pages()
     r = requests.get(f"{SB}/rest/v1/filters", headers=DB,
                      params={"enabled": "eq.true", "select": "*,users(telegram_id)"}, timeout=30)
     if not r.ok:
