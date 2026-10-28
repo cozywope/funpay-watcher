@@ -325,7 +325,7 @@ a("cs2","Скины","Тип","data-f-type");a("cs2","Скины","Рарите�
 a("cs2","Буст","Тип","data-f-type");a("cs2","Буст","Тип буста","data-f-type2");a("cs2","Буст","Способ","data-f-method");
 a("cs2","Буст","Диапазон Competitive","data-f-competitive");a("cs2","Буст","Диапазон Premier","data-f-premier");
 a("cs2","Прочее","Тип","data-f-type")})();
-var API="https://ezmduvodqosyslpdaudq.supabase.co/functions/v1/api",TG=window.Telegram&&Telegram.WebApp;
+var API="https://ezmduvodqosyslpdaudq.supabase.co/functions/v1/smart-service",TG=window.Telegram&&Telegram.WebApp;
 if(TG){try{TG.ready();TG.expand()}catch(e){}}
 function api(a,b,n){n=n||0;var body=JSON.stringify(Object.assign({action:a,initData:TG&&TG.initData||""},b||{}));
   return fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:body}).then(function(r){return r.text().then(function(t){try{return JSON.parse(t)}catch(e){return{ok:false,error:"http_"+r.status}}})}).catch(function(e){
